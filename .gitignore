@@ -1,0 +1,17 @@
+﻿# Folder sistem
+/vendor/
+node_modules/
+.env
+
+# File koneksi database
+config.php
+auth.php
+
+# Folder upload
+uploads/
+cache/
+
+# File sementara
+*.log
+*.tmp
+.DS_Store
