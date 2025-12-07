@@ -2,9 +2,12 @@
 require_once 'auth.php';
 require_once 'config.php';
 
+// --- LOGIKA TAMBAH POTENSI BARU ---
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['tambah'])) {
     $judul = $_POST['judul'];
     $isi = $_POST['isi'];
+    // Ambil tanggal dari form TAMBAH
+    $tanggal_dibuat = $_POST['tanggal_dibuat']; 
     $foto = $_FILES['foto']['name'];
     $target_dir = "uploads/";
 
@@ -16,9 +19,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['tambah'])) {
     move_uploaded_file($_FILES["foto"]["tmp_name"], $target_file);
 
     try {
-        $sql = "INSERT INTO potensi (judul, isi, foto) VALUES (?, ?, ?)";
+        // Query INSERT dengan tanggal
+        $sql = "INSERT INTO potensi (judul, isi, foto, tanggal_dibuat) VALUES (?, ?, ?, ?)";
         $stmt = $pdo->prepare($sql);
-        $stmt->execute([$judul, $isi, $foto]);
+        $stmt->execute([$judul, $isi, $foto, $tanggal_dibuat]);
     } catch (PDOException $e) {
         die("Error saat tambah potensi: " . $e->getMessage());
     }
@@ -27,6 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['tambah'])) {
     exit();
 }
 
+// --- LOGIKA HAPUS POTENSI ---
 if (isset($_GET['hapus'])) {
     $id = $_GET['hapus'];
     try {
@@ -53,6 +58,7 @@ if (isset($_GET['hapus'])) {
     exit();
 }
 
+// --- LOGIKA AMBIL DATA UNTUK EDIT ---
 $edit_data = null;
 if (isset($_GET['edit'])) {
     $id = $_GET['edit'];
@@ -66,10 +72,13 @@ if (isset($_GET['edit'])) {
     }
 }
 
+// --- LOGIKA UPDATE POTENSI ---
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update'])) {
     $id = $_POST['id'];
     $judul = $_POST['judul'];
     $isi = $_POST['isi'];
+    // Ambil tanggal dari form UPDATE
+    $tanggal_dibuat = $_POST['tanggal_dibuat']; 
     $foto_lama = $_POST['foto_lama'];
     $foto_baru = $_FILES['foto']['name'];
 
@@ -83,13 +92,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update'])) {
                 unlink("uploads/" . $foto_lama);
             }
 
-            $sql = "UPDATE potensi SET judul = ?, isi = ?, foto = ? WHERE id = ?";
+            // Query UPDATE dengan foto baru dan tanggal baru
+            $sql = "UPDATE potensi SET judul = ?, isi = ?, foto = ?, tanggal_dibuat = ? WHERE id = ?";
             $stmt = $pdo->prepare($sql);
-            $stmt->execute([$judul, $isi, $foto_baru, $id]);
+            $stmt->execute([$judul, $isi, $foto_baru, $tanggal_dibuat, $id]);
         } else {
-            $sql = "UPDATE potensi SET judul = ?, isi = ? WHERE id = ?";
+            // Query UPDATE tanpa foto baru, tapi dengan tanggal baru
+            $sql = "UPDATE potensi SET judul = ?, isi = ?, tanggal_dibuat = ? WHERE id = ?";
             $stmt = $pdo->prepare($sql);
-            $stmt->execute([$judul, $isi, $id]);
+            $stmt->execute([$judul, $isi, $tanggal_dibuat, $id]);
         }
     } catch (PDOException $e) {
         die("Error saat update potensi: " . $e->getMessage());
@@ -99,6 +110,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update'])) {
     exit();
 }
 
+// --- LOGIKA AMBIL DAFTAR POTENSI UNTUK TABEL ---
 try {
     $sql_tabel = "SELECT id, judul, foto, tanggal_dibuat FROM potensi ORDER BY tanggal_dibuat DESC";
     $stmt_tabel = $pdo->query($sql_tabel);
@@ -131,6 +143,7 @@ try {
         .main-content {
             padding: 20px;
             width: 100%;
+            max-width: 1200px;
             box-sizing: border-box;
         }
         .card {
@@ -147,6 +160,11 @@ try {
             border: 1px solid #ddd;
             border-radius: 6px;
             font-family: inherit;
+        }
+        label {
+             display: block;
+            margin-top: 15px;
+            font-weight: 600;
         }
         button {
             background: #27ae60;
@@ -243,18 +261,37 @@ try {
                     <input type="hidden" name="id" value="<?php echo htmlspecialchars($edit_data['id']); ?>">
                     <input type="hidden" name="foto_lama" value="<?php echo htmlspecialchars($edit_data['foto']); ?>">
                 <?php endif; ?>
+                
                 <label>Judul</label>
                 <input type="text" name="judul" value="<?php echo htmlspecialchars($edit_data['judul'] ?? ''); ?>" required>
+                
                 <label>Isi Potensi</label>
                 <textarea name="isi" rows="5" required><?php echo htmlspecialchars($edit_data['isi'] ?? ''); ?></textarea>
+                
+                <label>Tanggal Dibuat</label>
+                <input type="datetime-local" name="tanggal_dibuat" 
+                       value="<?php 
+                           if ($edit_data && $edit_data['tanggal_dibuat']) {
+                               // Format tanggal dari DB (biasanya YYYY-MM-DD HH:MM:SS) ke format yang dibutuhkan oleh input datetime-local (YYYY-MM-DDTHH:MM)
+                               echo date('Y-m-d\TH:i', strtotime($edit_data['tanggal_dibuat']));
+                           } else {
+                               // Untuk Tambah Baru, set default ke waktu saat ini
+                               echo date('Y-m-d\TH:i');
+                           }
+                       ?>" 
+                       required>
+                
                 <label>Foto</label>
                 <input type="file" name="foto" accept="image/*">
+                
                 <?php if ($edit_data && $edit_data['foto']): ?>
                     <p>Foto saat ini: <img src="uploads/<?php echo htmlspecialchars($edit_data['foto']); ?>" width="100"></p>
                 <?php endif; ?>
+                
                 <button type="submit" name="<?php echo $edit_data ? 'update' : 'tambah'; ?>">Simpan</button>
             </form>
         </div>
+        
         <div class="card">
             <h2>Daftar Potensi</h2>
             <table>

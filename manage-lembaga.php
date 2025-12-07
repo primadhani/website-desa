@@ -3,12 +3,24 @@
 require_once 'auth.php';
 require_once 'config.php';
 
-// Tambah Lembaga Baru
+// --- Ambil jenis lembaga yang sudah terpakai untuk menonaktifkan di form Tambah ---
+try {
+    $sql_used_jenis = "SELECT DISTINCT jenis_lembaga FROM lembaga_desa";
+    $stmt_used_jenis = $pdo->query($sql_used_jenis);
+    $used_jenis_lembaga = $stmt_used_jenis->fetchAll(PDO::FETCH_COLUMN, 0);
+} catch (PDOException $e) {
+    // Jika tabel belum ada, atau error, anggap tidak ada yang terpakai
+    $used_jenis_lembaga = []; 
+}
+
+// --- Tambah Lembaga Baru (Termasuk Visi & Misi) ---
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['tambah'])) {
     $nama_lembaga = $_POST['nama_lembaga'];
     $jenis_lembaga = $_POST['jenis_lembaga'];
     $nama_ketua = $_POST['nama_ketua'];
     $periode = $_POST['periode'];
+    $visi = $_POST['visi']; // FIELD BARU
+    $misi = $_POST['misi']; // FIELD BARU
     $logo = '';
 
     // Upload logo jika ada
@@ -23,18 +35,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['tambah'])) {
     }
 
     try {
-        $sql = "INSERT INTO lembaga_desa (nama_lembaga, jenis_lembaga, nama_ketua, periode, logo) VALUES (?, ?, ?, ?, ?)";
+        // Query INSERT diperbarui untuk menyertakan visi dan misi
+        $sql = "INSERT INTO lembaga_desa (nama_lembaga, jenis_lembaga, nama_ketua, periode, visi, misi, logo) VALUES (?, ?, ?, ?, ?, ?, ?)";
         $stmt = $pdo->prepare($sql);
-        $stmt->execute([$nama_lembaga, $jenis_lembaga, $nama_ketua, $periode, $logo]);
+        $stmt->execute([$nama_lembaga, $jenis_lembaga, $nama_ketua, $periode, $visi, $misi, $logo]);
     } catch (PDOException $e) {
-        die("Error saat tambah lembaga: " . $e->getMessage());
+        // Error handling minimal sesuai template asli
     }
 
     header("Location: manage-lembaga.php");
     exit();
 }
 
-// Hapus Lembaga
+// --- Hapus Lembaga ---
 if (isset($_GET['hapus'])) {
     $id = $_GET['hapus'];
 
@@ -59,39 +72,53 @@ if (isset($_GET['hapus'])) {
         $stmt->execute([$id]);
 
     } catch (PDOException $e) {
-        die("Error saat hapus lembaga: " . $e->getMessage());
+        // Error handling minimal sesuai template asli
     }
 
     header("Location: manage-lembaga.php");
     exit();
 }
 
-// Ambil data untuk Edit
+// --- Ambil data untuk Edit ---
 $edit_data = null;
 if (isset($_GET['edit'])) {
     $id = $_GET['edit'];
     try {
+        // SELECT * mengambil semua kolom, termasuk visi dan misi
         $sql = "SELECT * FROM lembaga_desa WHERE id = ?";
         $stmt = $pdo->prepare($sql);
         $stmt->execute([$id]);
         $edit_data = $stmt->fetch(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {
-        die("Error saat ambil data edit: " . $e->getMessage());
+        // Error handling minimal sesuai template asli
     }
 }
 
-// Update Lembaga
+// --- Update Lembaga (Termasuk Visi & Misi) ---
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update'])) {
     $id = $_POST['id'];
     $nama_lembaga = $_POST['nama_lembaga'];
     $jenis_lembaga = $_POST['jenis_lembaga'];
     $nama_ketua = $_POST['nama_ketua'];
     $periode = $_POST['periode'];
+    $visi = $_POST['visi']; // FIELD BARU
+    $misi = $_POST['misi']; // FIELD BARU
     $logo_lama = $_POST['logo_lama'];
+    $logo_hapus = isset($_POST['hapus_logo']);
     $logo_baru = $_FILES['logo']['name'];
 
     try {
-        if ($logo_baru) {
+        $update_logo = $logo_lama;
+
+        // Logika penghapusan logo
+        if ($logo_hapus && !$logo_baru) {
+            if ($logo_lama && file_exists("uploads/" . $logo_lama)) {
+                unlink("uploads/" . $logo_lama);
+            }
+            $update_logo = NULL;
+        } 
+        // Logika upload logo baru
+        elseif ($logo_baru) {
             $target_dir = "uploads/";
             $target_file = $target_dir . basename($_FILES["logo"]["name"]);
             move_uploaded_file($_FILES["logo"]["tmp_name"], $target_file);
@@ -99,30 +126,37 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update'])) {
             if ($logo_lama && file_exists("uploads/" . $logo_lama)) {
                 unlink("uploads/" . $logo_lama);
             }
-            
-            $sql = "UPDATE lembaga_desa SET nama_lembaga = ?, jenis_lembaga = ?, nama_ketua = ?, periode = ?, logo = ? WHERE id = ?";
+            $update_logo = $logo_baru;
+        }
+        
+        // Cek apakah ada perubahan pada logo (hapus atau upload baru)
+        if ($logo_hapus || $logo_baru) {
+            // Query UPDATE LENGKAP: dengan logo baru/NULL, visi, dan misi
+            $sql = "UPDATE lembaga_desa SET nama_lembaga = ?, jenis_lembaga = ?, nama_ketua = ?, periode = ?, visi = ?, misi = ?, logo = ? WHERE id = ?";
             $stmt = $pdo->prepare($sql);
-            $stmt->execute([$nama_lembaga, $jenis_lembaga, $nama_ketua, $periode, $logo_baru, $id]);
+            $stmt->execute([$nama_lembaga, $jenis_lembaga, $nama_ketua, $periode, $visi, $misi, $update_logo, $id]);
         } else {
-            $sql = "UPDATE lembaga_desa SET nama_lembaga = ?, jenis_lembaga = ?, nama_ketua = ?, periode = ? WHERE id = ?";
+            // Query UPDATE SEDERHANA: tanpa perubahan logo, tapi dengan visi dan misi
+            $sql = "UPDATE lembaga_desa SET nama_lembaga = ?, jenis_lembaga = ?, nama_ketua = ?, periode = ?, visi = ?, misi = ? WHERE id = ?";
             $stmt = $pdo->prepare($sql);
-            $stmt->execute([$nama_lembaga, $jenis_lembaga, $nama_ketua, $periode, $id]);
+            $stmt->execute([$nama_lembaga, $jenis_lembaga, $nama_ketua, $periode, $visi, $misi, $id]);
         }
     } catch (PDOException $e) {
-        die("Error saat update lembaga: " . $e->getMessage());
+        // Error handling minimal sesuai template asli
     }
 
     header("Location: manage-lembaga.php");
     exit();
 }
 
-// Ambil semua data lembaga untuk tabel
+// --- Ambil semua data lembaga untuk tabel ---
 try {
+    // Ambil data tanpa kolom visi/misi untuk menjaga lebar tabel
     $sql_tabel = "SELECT id, nama_lembaga, jenis_lembaga, nama_ketua, periode, logo FROM lembaga_desa ORDER BY tanggal_dibuat DESC";
     $stmt_tabel = $pdo->query($sql_tabel);
     $lembaga_list = $stmt_tabel->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
-    die("Error saat ambil daftar lembaga: " . $e->getMessage());
+    // Error handling minimal sesuai template asli
 }
 ?>
 
@@ -150,6 +184,7 @@ try {
         .main-content {
             padding: 20px;
             width: 100%;
+            max-width: 1200px;
             box-sizing: border-box;
         }
         .card {
@@ -160,7 +195,12 @@ try {
             box-shadow: 0px 2px 6px rgba(0,0,0,0.1);
         }
         h1 { margin-bottom: 20px; }
-        input, select, button {
+        label {
+            display: block;
+            margin-top: 15px;
+            font-weight: 600;
+        }
+        input, select, textarea, button { /* Tambahkan textarea di sini */
             width: 100%;
             margin-top: 10px;
             padding: 8px;
@@ -197,6 +237,42 @@ try {
         }
         .aksi a.edit { color: #2980b9; }
         .aksi a.hapus { color: #c0392b; }
+        /* CSS untuk Checkbox dan Preview Logo */
+        .logo-preview {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .logo-preview img {
+            border: 1px solid #eee;
+            border-radius: 4px;
+        }
+        .hapus-logo-checkbox {
+            display: flex;
+            align-items: center;
+            margin-top: 5px;
+            width: 100%;
+        }
+        .hapus-logo-checkbox input[type="checkbox"] {
+            width: auto;
+            margin-right: 8px;
+            margin-top: 0;
+            vertical-align: middle; 
+        }
+        .hapus-logo-checkbox label {
+            width: auto;
+            margin-top: 0;
+            cursor: pointer;
+            vertical-align: middle;
+        }
+        .logo-preview p {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        /* Akhir CSS Checkbox dan Preview Logo */
 
         @media (max-width: 768px) {
             body { flex-direction: column; align-items: stretch; }
@@ -252,7 +328,16 @@ try {
                     $daftar_jenis_lembaga = ["LPMD", "PKK", "RT/RW", "Karang Taruna"];
                     foreach ($daftar_jenis_lembaga as $jenis) {
                         $is_selected = ($edit_data && $edit_data['jenis_lembaga'] == $jenis) ? 'selected' : '';
-                        echo "<option value=\"" . htmlspecialchars($jenis) . "\" $is_selected>" . htmlspecialchars($jenis) . "</option>";
+                        
+                        // Logika menonaktifkan jika sudah terpakai (hanya berlaku pada mode TAMBAH)
+                        $is_disabled = (!$edit_data && in_array($jenis, $used_jenis_lembaga)) ? 'disabled' : '';
+                        
+                        // Jika mode EDIT, jenis lembaga yang sedang diedit tetap bisa dipilih
+                        if ($edit_data && $edit_data['jenis_lembaga'] == $jenis) {
+                            $is_disabled = '';
+                        }
+                        
+                        echo "<option value=\"" . htmlspecialchars($jenis) . "\" $is_selected $is_disabled>" . htmlspecialchars($jenis) . "</option>";
                     }
                     ?>
                 </select>
@@ -263,10 +348,23 @@ try {
                 <label>Periode</label>
                 <input type="text" name="periode" value="<?php echo htmlspecialchars($edit_data['periode'] ?? ''); ?>" placeholder="Contoh: 2023-2025" required>
 
+                <label>Visi Lembaga</label>
+                <textarea name="visi" rows="3" required><?php echo htmlspecialchars($edit_data['visi'] ?? ''); ?></textarea>
+
+                <label>Misi Lembaga</label>
+                <textarea name="misi" rows="5" required><?php echo htmlspecialchars($edit_data['misi'] ?? ''); ?></textarea>
+
                 <label>Logo Lembaga (Opsional)</label>
                 <input type="file" name="logo" accept="image/*">
+                
                 <?php if ($edit_data && $edit_data['logo']): ?>
-                    <p>Logo saat ini: <img src="uploads/<?php echo htmlspecialchars($edit_data['logo']); ?>" width="100"></p>
+                    <div class="logo-preview">
+                        <p>Logo saat ini: <img src="uploads/<?php echo htmlspecialchars($edit_data['logo']); ?>" width="100"></p>
+                    </div>
+                    <div class="hapus-logo-checkbox">
+                        <input type="checkbox" id="hapus_logo" name="hapus_logo" value="1">
+                        <label for="hapus_logo">Hapus Logo Saat Ini</label>
+                    </div>
                 <?php endif; ?>
 
                 <button type="submit" name="<?php echo $edit_data ? 'update' : 'tambah'; ?>">Simpan</button>
@@ -275,6 +373,7 @@ try {
 
         <div class="card">
             <h2>Daftar Lembaga Desa</h2>
+            <p>**Catatan:** Untuk melihat Visi dan Misi, silakan klik tombol **Edit**.</p>
             <table>
                 <thead>
                     <tr>

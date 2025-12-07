@@ -1,7 +1,7 @@
 <?php
 require_once 'config.php';
 
-$sql = "SELECT nama_lembaga, jenis_lembaga, nama_ketua, logo, periode 
+$sql = "SELECT nama_lembaga, jenis_lembaga, nama_ketua, logo, periode, visi, misi 
         FROM lembaga_desa 
         WHERE jenis_lembaga = 'PKK' 
         LIMIT 1";
@@ -103,6 +103,7 @@ try {
             padding-left: 20px;
         }
 
+        /* Responsive CSS */
         @media (max-width: 1024px) {
             .page-wrapper {
                 max-width: 95%;
@@ -178,46 +179,63 @@ try {
 </head>
 <body>
     <?php include 'nav.php'; ?>
+
     <div class="page-wrapper">
         <div class="main-content">
             <header class="header">
                 <?php if ($lembaga_data && !empty($lembaga_data['logo'])): ?>
-                    <img src="uploads/<?php echo htmlspecialchars($lembaga_data['logo']); ?>" alt="Logo <?php echo htmlspecialchars($lembaga_data['nama_lembaga'] ?? 'PKK'); ?>">
+                    <img src="uploads/<?php echo htmlspecialchars($lembaga_data['logo']); ?>" alt="Logo <?php echo htmlspecialchars($lembaga_data['nama_lembaga'] ?? 'Karang Taruna'); ?>">
                 <?php endif; ?>
-                <h1><?php echo $lembaga_data ? htmlspecialchars($lembaga_data['nama_lembaga']) : 'Lembaga PKK'; ?></h1>
+                <h1><?php echo $lembaga_data ? htmlspecialchars($lembaga_data['nama_lembaga']) : 'Lembaga Karang Taruna'; ?></h1>
             </header>
+
             <hr>
+
             <?php if ($lembaga_data): ?>
-            <div class="section">
-                <h2>Tentang Lembaga</h2>
-                <ul>
-                    <li><strong>Jenis Lembaga:</strong> <?php echo htmlspecialchars($lembaga_data['jenis_lembaga']); ?></li>
-                    <li><strong>Nama Ketua:</strong> <?php echo htmlspecialchars($lembaga_data['nama_ketua']); ?></li>
-                    <li><strong>Periode:</strong> <?php echo htmlspecialchars($lembaga_data['periode'] ?? '-'); ?></li>
-                </ul>
-            </div>
-            <div class="section visi-misi">
-                <h2>Visi dan Misi</h2>
-                <h3>Visi</h3>
-                <p>Mewujudkan keluarga sehat, sejahtera, maju, mandiri, dan berkesadaran lingkungan.</p>
-                <h3>Misi</h3>
-                <ol>
-                    <li>Meningkatkan kesadaran masyarakat tentang pentingnya kesehatan dan gizi keluarga.</li>
-                    <li>Mengembangkan potensi ekonomi keluarga melalui pelatihan dan pemberdayaan.</li>
-                    <li>Memperkuat peran perempuan dalam pembangunan desa.</li>
-                    <li>Menciptakan lingkungan yang bersih dan sehat.</li>
-                </ol>
-            </div>
+                <div class="section">
+                    <h2>Tentang Lembaga</h2>
+                    <ul>
+                        <li><strong>Jenis Lembaga:</strong> <?php echo htmlspecialchars($lembaga_data['jenis_lembaga']); ?></li>
+                        <li><strong>Nama Ketua:</strong> <?php echo htmlspecialchars($lembaga_data['nama_ketua']); ?></li>
+                        <li><strong>Periode:</strong> <?php echo htmlspecialchars($lembaga_data['periode'] ?? '-'); ?></li>
+                    </ul>
+                </div>
+
+                <div class="section visi-misi">
+                    <h2>Visi dan Misi</h2>
+                    
+                    <h3>Visi</h3>
+                    <p>
+                        <?php echo nl2br(htmlspecialchars($lembaga_data['visi'] ?? 'Visi belum diatur.')); ?>
+                    </p>
+                    
+                    <h3>Misi</h3>
+                    <?php 
+                        $misi_text = $lembaga_data['misi'] ?? '';
+                        $misi_list = array_filter(explode("\n", $misi_text));
+                    ?>
+                    <?php if (!empty($misi_list)): ?>
+                        <ol>
+                            <?php foreach ($misi_list as $misi_item): ?>
+                                <li><?php echo htmlspecialchars(trim($misi_item)); ?></li>
+                            <?php endforeach; ?>
+                        </ol>
+                    <?php else: ?>
+                        <p>Misi belum diatur.</p>
+                    <?php endif; ?>
+                </div>
             <?php else: ?>
-            <div class="section">
-                <p>Data lembaga PKK tidak ditemukan.</p>
-            </div>
+                <div class="section">
+                    <p>Data lembaga Karang Taruna tidak ditemukan.</p>
+                </div>
             <?php endif; ?>
         </div>
+
         <aside class="sidebar">
             <?php include 'aside.php'; ?>
         </aside>
     </div>
+
     <?php include 'footer.php'; ?>
 </body>
 </html>

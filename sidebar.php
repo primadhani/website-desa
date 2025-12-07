@@ -229,12 +229,13 @@ body {
   </div>
   <nav class="nav">
     <ul id="menu-list">
-      <li><a href="manage-potensi.php"><i class="ph ph-house icon-sidebar"></i>Potensi</a></li>
-      <li><a href="manage-berita.php"><i class="ph ph-map-trifold icon-sidebar"></i>Berita</a></li>
-      <li><a href="manage-struktur.php"><i class="ph ph-browser icon-sidebar"></i>Struktur</a></li>
-      <li><a href="manage-lembaga.php"><i class="ph ph-browser icon-sidebar"></i>Lembaga Masyarakat</a></li>
-      <li><a href="manage-komentar.php"><i class="ph ph-notebook icon-sidebar"></i>Komentar</a></li>
-      <li><a href="logout.php"><i class="ph ph-browser icon-sidebar"></i>Logout</a></li>
+      <li><a href="manage-potensi.php"></i>Potensi</a></li>
+      <li><a href="manage-berita.php"></i>Berita</a></li>
+      <li><a href="manage-struktur.php"></i>Struktur</a></li>
+      <li><a href="manage-lembaga.php"></i>Lembaga Masyarakat</a></li>
+      <li><a href="manage-komentar.php"></i>Komentar</a></li>
+      <li><a href="manage-user.php"></i>User</a></li>
+      <li><a href="logout.php"></i>Logout</a></li>
     </ul>
   </nav>
   <div id="icon" class="icon">

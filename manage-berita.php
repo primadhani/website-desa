@@ -1,10 +1,13 @@
 <?php
+// Pastikan file 'auth.php' dan 'config.php' sudah di-include
 require_once 'auth.php';
 require_once 'config.php';
 
+// --- LOGIKA TAMBAH BERITA BARU ---
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['tambah'])) {
     $judul = $_POST['judul'];
     $isi_berita = $_POST['isi_berita'];
+    $tanggal_dibuat = $_POST['tanggal_dibuat']; // Tambahkan Tanggal
     $gambar = $_FILES['gambar']['name'];
     $target_dir = "uploads/";
 
@@ -16,9 +19,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['tambah'])) {
     move_uploaded_file($_FILES["gambar"]["tmp_name"], $target_file);
 
     try {
-        $sql = "INSERT INTO berita (judul, isi_berita, gambar) VALUES (?, ?, ?)";
+        // Tambahkan kolom 'tanggal_dibuat' ke query INSERT
+        $sql = "INSERT INTO berita (judul, isi_berita, gambar, tanggal_dibuat) VALUES (?, ?, ?, ?)";
         $stmt = $pdo->prepare($sql);
-        $stmt->execute([$judul, $isi_berita, $gambar]);
+        $stmt->execute([$judul, $isi_berita, $gambar, $tanggal_dibuat]);
     } catch (PDOException $e) {
         die("Error saat tambah berita: " . $e->getMessage());
     }
@@ -27,9 +31,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['tambah'])) {
     exit();
 }
 
+// --- LOGIKA HAPUS BERITA ---
 if (isset($_GET['hapus'])) {
     $id = $_GET['hapus'];
     try {
+        // Hapus file gambar terkait
         $sql_gambar = "SELECT gambar FROM berita WHERE id = ?";
         $stmt_gambar = $pdo->prepare($sql_gambar);
         $stmt_gambar->execute([$id]);
@@ -42,6 +48,7 @@ if (isset($_GET['hapus'])) {
             }
         }
 
+        // Hapus data dari database
         $sql = "DELETE FROM berita WHERE id = ?";
         $stmt = $pdo->prepare($sql);
         $stmt->execute([$id]);
@@ -53,6 +60,7 @@ if (isset($_GET['hapus'])) {
     exit();
 }
 
+// --- LOGIKA AMBIL DATA UNTUK EDIT ---
 $edit_data = null;
 if (isset($_GET['edit'])) {
     $id = $_GET['edit'];
@@ -66,10 +74,12 @@ if (isset($_GET['edit'])) {
     }
 }
 
+// --- LOGIKA UPDATE BERITA ---
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update'])) {
     $id = $_POST['id'];
     $judul = $_POST['judul'];
     $isi_berita = $_POST['isi_berita'];
+    $tanggal_dibuat = $_POST['tanggal_dibuat']; // Ambil Tanggal yang Diedit
     $gambar_lama = $_POST['gambar_lama'];
     $gambar_baru = $_FILES['gambar']['name'];
 
@@ -79,17 +89,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update'])) {
             $target_file = $target_dir . basename($_FILES["gambar"]["name"]);
             move_uploaded_file($_FILES["gambar"]["tmp_name"], $target_file);
 
+            // Hapus gambar lama
             if ($gambar_lama && file_exists("uploads/" . $gambar_lama)) {
                 unlink("uploads/" . $gambar_lama);
             }
 
-            $sql = "UPDATE berita SET judul = ?, isi_berita = ?, gambar = ? WHERE id = ?";
+            // Query UPDATE dengan gambar baru dan tanggal baru
+            $sql = "UPDATE berita SET judul = ?, isi_berita = ?, gambar = ?, tanggal_dibuat = ? WHERE id = ?";
             $stmt = $pdo->prepare($sql);
-            $stmt->execute([$judul, $isi_berita, $gambar_baru, $id]);
+            $stmt->execute([$judul, $isi_berita, $gambar_baru, $tanggal_dibuat, $id]);
         } else {
-            $sql = "UPDATE berita SET judul = ?, isi_berita = ? WHERE id = ?";
+            // Query UPDATE tanpa gambar baru, tapi dengan tanggal baru
+            $sql = "UPDATE berita SET judul = ?, isi_berita = ?, tanggal_dibuat = ? WHERE id = ?";
             $stmt = $pdo->prepare($sql);
-            $stmt->execute([$judul, $isi_berita, $id]);
+            $stmt->execute([$judul, $isi_berita, $tanggal_dibuat, $id]);
         }
     } catch (PDOException $e) {
         die("Error saat update berita: " . $e->getMessage());
@@ -99,6 +112,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update'])) {
     exit();
 }
 
+// --- LOGIKA AMBIL DAFTAR BERITA UNTUK TABEL ---
 try {
     $sql_tabel = "SELECT id, judul, gambar, tanggal_dibuat FROM berita ORDER BY tanggal_dibuat DESC";
     $stmt_tabel = $pdo->query($sql_tabel);
@@ -129,6 +143,7 @@ try {
         .main-content {
             padding: 20px;
             width: 100%;
+            max-width: 1200px; /* Batasi lebar agar tidak terlalu melebar */
             box-sizing: border-box;
         }
         .card {
@@ -145,6 +160,11 @@ try {
             border: 1px solid #ddd;
             border-radius: 6px;
             font-family: inherit;
+        }
+        label {
+            display: block;
+            margin-top: 15px;
+            font-weight: 600;
         }
         button {
             background: #27ae60;
@@ -233,7 +253,10 @@ try {
     </style>
 </head>
 <body>
-    <?php include 'sidebar.php'; ?>
+    <?php 
+    // Asumsi 'sidebar.php' ada
+    include 'sidebar.php'; 
+    ?>
     <div class="main-content">
         <h1>Manajemen Berita</h1>
         <div class="card">
@@ -243,18 +266,36 @@ try {
                     <input type="hidden" name="id" value="<?php echo htmlspecialchars($edit_data['id']); ?>">
                     <input type="hidden" name="gambar_lama" value="<?php echo htmlspecialchars($edit_data['gambar']); ?>">
                 <?php endif; ?>
+                
                 <label>Judul</label>
                 <input type="text" name="judul" value="<?php echo htmlspecialchars($edit_data['judul'] ?? ''); ?>" required>
+                
                 <label>Isi Berita</label>
                 <textarea name="isi_berita" rows="5" required><?php echo htmlspecialchars($edit_data['isi_berita'] ?? ''); ?></textarea>
+                
+                <label>Tanggal Dibuat</label>
+                <input type="datetime-local" name="tanggal_dibuat" 
+                       value="<?php 
+                           if ($edit_data && $edit_data['tanggal_dibuat']) {
+                               // Format tanggal_dibuat ke format yyyy-MM-ddTHH:mm yang dibutuhkan oleh datetime-local
+                               echo date('Y-m-d\TH:i', strtotime($edit_data['tanggal_dibuat']));
+                           } else {
+                               // Jika Tambah Baru, isi dengan waktu sekarang (opsional)
+                               echo date('Y-m-d\TH:i');
+                           }
+                       ?>" 
+                       required>
+                
                 <label>Gambar</label>
-                <input type="file" name="gambar" accept="image/*">
+                <input type="file" name="gambar" accept="image/*" <?php echo $edit_data ? '' : 'required'; ?>>
                 <?php if ($edit_data && $edit_data['gambar']): ?>
                     <p>Gambar saat ini: <img src="uploads/<?php echo htmlspecialchars($edit_data['gambar']); ?>" width="100"></p>
                 <?php endif; ?>
+                
                 <button type="submit" name="<?php echo $edit_data ? 'update' : 'tambah'; ?>">Simpan</button>
             </form>
         </div>
+        
         <div class="card">
             <h2>Daftar Berita</h2>
             <table>

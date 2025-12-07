@@ -3,7 +3,7 @@ require_once 'config.php';
 
 
 try {
-    $sql = "SELECT id, judul, isi, foto, tanggal_dibuat FROM potensi ORDER BY tanggal_dibuat DESC";
+    $sql = "SELECT id, judul, isi, foto, tanggal_dibuat FROM potensi ORDER BY tanggal_dibuat DESC LIMIT 6";
     $stmt = $pdo->prepare($sql);
     $stmt->execute();
     $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -292,6 +292,23 @@ try {
     margin-bottom: 10px;
 }
 
+.read-more-button {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .read-more-button a {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #5a1212;
+            color: white;
+            border-radius: 5px;
+            text-decoration: none;
+            transition: background-color 0.3s ease;
+        }
+        .read-more-button a:hover {
+            background-color: #5a1212;
+        }
+
 @media (max-width: 768px) {
     .sejarah-container {
         padding: 20px;
@@ -527,6 +544,9 @@ Kini, Desa Selorejo telah berubah menjadi desa yang modern namun tetap mempertah
         }
         ?>
     </div>
+    <div class="read-more-button">
+            <a href="potensi.php">Lihat Semua Potensi</a>
+        </div>
 </div>
 
 

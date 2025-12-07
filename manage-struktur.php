@@ -130,6 +130,7 @@ body {
 .main-content {
     padding: 20px;
     width: 100%;
+    max-width: 1200px; /* Ditambahkan max-width agar sesuai dengan template */
     box-sizing: border-box;
 }
 .card {
@@ -140,6 +141,11 @@ body {
     box-shadow: 0px 2px 6px rgba(0,0,0,0.1);
 }
 h1 { margin-bottom: 20px; }
+label { /* Tambahkan label style */
+    display: block;
+    margin-top: 15px;
+    font-weight: 600;
+}
 input, select, button {
     width: 100%;
     margin-top: 10px;
@@ -177,8 +183,16 @@ th { background: #34495e; color: white; }
 }
 .aksi a.edit { color: #2980b9; }
 .aksi a.hapus { color: #c0392b; }
+
+/* Menyesuaikan style untuk pratinjau foto agar konsisten */
+.card p {
+    margin-top: 10px;
+    font-size: 0.9em;
+}
+
 @media (max-width: 768px) {
     body { flex-direction: column; align-items: stretch; }
+    .main-content { padding: 15px; } /* Menyamakan padding */
     table, thead, tbody, th, td, tr { display: block; }
     thead { display: none; }
     tr {
@@ -189,7 +203,7 @@ th { background: #34495e; color: white; }
         background: #fff;
         box-shadow: 0px 2px 5px rgba(0,0,0,0.05);
     }
-    td { border: none; padding: 6px 8px; }
+    td { border: none; padding: 6px 8px; position: relative; } /* Menambahkan position: relative */
     td::before {
         content: attr(data-label);
         font-weight: bold;

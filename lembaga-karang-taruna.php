@@ -1,7 +1,7 @@
 <?php
 require_once 'config.php';
 
-$sql = "SELECT nama_lembaga, jenis_lembaga, nama_ketua, logo, periode 
+$sql = "SELECT nama_lembaga, jenis_lembaga, nama_ketua, logo, periode, visi, misi 
         FROM lembaga_desa 
         WHERE jenis_lembaga = 'Karang Taruna' 
         LIMIT 1";
@@ -103,6 +103,7 @@ try {
             padding-left: 20px;
         }
 
+        /* Responsive CSS */
         @media (max-width: 1024px) {
             .page-wrapper {
                 max-width: 95%;
@@ -202,15 +203,26 @@ try {
 
                 <div class="section visi-misi">
                     <h2>Visi dan Misi</h2>
+                    
                     <h3>Visi</h3>
-                    <p>Terwujudnya kesejahteraan sosial masyarakat khususnya generasi muda yang partisipatif, aktif, kreatif, berkesadaran sosial, dan bertanggung jawab.</p>
+                    <p>
+                        <?php echo nl2br(htmlspecialchars($lembaga_data['visi'] ?? 'Visi belum diatur.')); ?>
+                    </p>
+                    
                     <h3>Misi</h3>
-                    <ol>
-                        <li>Mengembangkan potensi dan kreativitas generasi muda di bidang ekonomi, sosial, dan budaya.</li>
-                        <li>Meningkatkan kesadaran sosial dan solidaritas di antara anggota Karang Taruna dan masyarakat.</li>
-                        <li>Membangun kemitraan strategis dengan berbagai pihak untuk mendukung program-program Karang Taruna.</li>
-                        <li>Menyediakan wadah bagi generasi muda untuk berorganisasi dan berkontribusi dalam pembangunan desa.</li>
-                    </ol>
+                    <?php 
+                        $misi_text = $lembaga_data['misi'] ?? '';
+                        $misi_list = array_filter(explode("\n", $misi_text));
+                    ?>
+                    <?php if (!empty($misi_list)): ?>
+                        <ol>
+                            <?php foreach ($misi_list as $misi_item): ?>
+                                <li><?php echo htmlspecialchars(trim($misi_item)); ?></li>
+                            <?php endforeach; ?>
+                        </ol>
+                    <?php else: ?>
+                        <p>Misi belum diatur.</p>
+                    <?php endif; ?>
                 </div>
             <?php else: ?>
                 <div class="section">
